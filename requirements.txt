@@ -1,0 +1,5 @@
+openai
+streamlit
+pydantic
+python-dotenv
+streamlit-mermaid
