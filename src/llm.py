@@ -1,5 +1,6 @@
 import os
 import json
+from typing import List
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -38,4 +39,22 @@ class LLMClient:
             
         except Exception as e:
             print(f"LLM Error: {e}")
+            raise e
+
+    def fetch_embeddings(self, texts: List[str]) -> List[List[float]]:
+        """
+        テキストのリストを受け取り、埋め込みベクトルのリストを返す。
+        """
+        if not self.client:
+            raise ValueError("API Key is missing. Please set OPENAI_API_KEY in .env file.")
+        
+        try:
+            response = self.client.embeddings.create(
+                model="text-embedding-3-small",
+                input=texts
+            )
+            return [item.embedding for item in response.data]
+            
+        except Exception as e:
+            print(f"Embedding Error: {e}")
             raise e
