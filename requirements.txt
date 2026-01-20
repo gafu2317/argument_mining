@@ -2,6 +2,7 @@ openai
 streamlit
 pydantic
 python-dotenv
-streamlit-mermaid
 scikit-learn
 numpy
+altair
+pandas

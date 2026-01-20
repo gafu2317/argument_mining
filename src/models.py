@@ -6,7 +6,7 @@ class Node(BaseModel):
     type: str       # issue, position, argument, decision
     content: str
     speaker: Optional[str] = None
-    cluster_id: Optional[int] = None
+    position_2d: Optional[List[float]] = None
 
 class Edge(BaseModel):
     source: str
