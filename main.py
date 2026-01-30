@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-import numpy as np # numpyをインポート
+import numpy as np
 from dotenv import load_dotenv
 
 from src.strategies.ibis import IBISStrategy
@@ -28,6 +28,8 @@ def main():
     # ==========================================
     if "graph_data" not in st.session_state:
         st.session_state["graph_data"] = None
+    if "distance_metric" not in st.session_state:
+        st.session_state["distance_metric"] = "コサイン類似度"
 
     # ==========================================
     # 1. サイドバー (設定と入力)
@@ -43,7 +45,16 @@ def main():
         strategy_option = st.selectbox("分析モデル", ["IBIS (議論・意思決定)", "Toulmin (論理・正当性)"])
         
         st.divider()
-        use_topic_analysis = st.checkbox("トピックマップ分析を実行する", value=True)
+        use_color_analysis = st.checkbox("色分け分析を実行する", value=True)
+        
+        # use_color_analysisがチェックされている場合のみ、距離指標の選択肢を表示
+        if use_color_analysis:
+            st.session_state["distance_metric"] = st.radio(
+                "色分けの計算指標",
+                ["コサイン類似度", "ユークリッド距離"],
+                index=["コサイン類似度", "ユークリッド距離"].index(st.session_state["distance_metric"])
+            )
+        
         st.divider()
 
         input_mode = st.radio("入力ソース", ["📂 サンプル", "📝 直接入力"], horizontal=True)
@@ -73,108 +84,77 @@ def main():
                             strategy = ToulminStrategy()
                         
                         graph = strategy.analyze(text_area_val)
-                        # 属性を初期化
                         for node in graph.nodes:
-                            # Pydanticモデルにフィールドがないとエラーになるため、Noneで初期化しておく
                             node.position_2d = None
-                            node.embedding = None # embeddingも初期化
-                            node.cosine_sim_to_first = None # コサイン類似度も初期化
+                            node.embedding = None
+                            node.cosine_sim_to_first = None
+                            node.euclidean_distance_to_first = None
                         st.session_state["graph_data"] = graph
 
-                    # --- トピック分析処理 (ベクトル化と2次元化) ---
-                    if use_topic_analysis and graph and graph.nodes:
-                        with st.spinner('ベクトル化とトピックマップ分析を実行中...'):
+                    # --- 色分け分析処理 ---
+                    if use_color_analysis and graph and graph.nodes:
+                        with st.spinner('ベクトル化と距離計算を実行中...'):
                             llm = LLMClient()
                             node_contents = [node.content for node in graph.nodes]
-                            
                             vectors = llm.fetch_embeddings(node_contents)
                             
-                            # 各ノードにembeddingを格納
                             for i, node in enumerate(graph.nodes):
                                 node.embedding = vectors[i]
 
-                            # 最初のノードのembeddingを基準とする
-                            if graph.nodes:
+                            if graph.nodes and len(graph.nodes) > 1:
                                 first_node_embedding = np.array(graph.nodes[0].embedding)
-                                # コサイン類似度を計算し、ノードに格納
                                 for node in graph.nodes:
                                     if node.embedding is not None:
                                         node_embedding = np.array(node.embedding)
-                                        # ゼロ除算を避けるためにノルムがゼロでないことを確認
+                                        # コサイン類似度
                                         if np.linalg.norm(first_node_embedding) > 0 and np.linalg.norm(node_embedding) > 0:
-                                            node.cosine_sim_to_first = np.dot(node_embedding, first_node_embedding) / (np.linalg.norm(node_embedding) * np.linalg.norm(first_node_embedding))
+                                            sim = np.dot(node_embedding, first_node_embedding) / (np.linalg.norm(node_embedding) * np.linalg.norm(first_node_embedding))
+                                            node.cosine_sim_to_first = sim
                                         else:
-                                            node.cosine_sim_to_first = 0.0 # あるいはNone, 適当なデフォルト値
+                                            node.cosine_sim_to_first = 0.0
+                                        
+                                        # ユークリッド距離
+                                        dist = np.linalg.norm(node_embedding - first_node_embedding)
+                                        node.euclidean_distance_to_first = dist
                             
                             positions = reduce_dimensions_pca(vectors)
-                            
                             for i, node in enumerate(graph.nodes):
                                 node.position_2d = positions[i]
                             
-                            st.session_state["graph_data"] = graph # 分析結果で更新
+                            st.session_state["graph_data"] = graph
                             
                 except Exception as e:
                     st.error(f"エラー: {e}")
 
     # ==========================================
-    # 2. メインエリア (統合されたトピックマップを表示)
+    # 2. メインエリア
     # ==========================================
     
     if st.session_state["graph_data"]:
         graph = st.session_state["graph_data"]
         
-        # タブを再導入
-        tab1, tab2 = st.tabs(["🗺️ トピックマップ", "📈 時間軸分析"])
+        st.markdown("""
+        <div style="background-color:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd; margin-bottom:20px;">
+            <h5 style="margin:0 0 10px 0;">💡 図の見方 (Legend)</h5>
+            <p style="margin:0;">会話の進行順にノードが横一直線上に並び、各ノードの色の変化で話題の移り変わりを追います。</p>
+            <ul style="font-size: smaller; margin-bottom:0;">
+                <li><b>横軸:</b> 会話の進行順（時間）</li>
+                <li><b>縦軸:</b> 発言者</li>
+                <li><b>ノードの色:</b> 最初の発言からの話題の距離（近いほど青、遠いほど赤）</li>
+                <li><b>ノードの形:</b> ノードの種類（論点、提案など）</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
 
-        with tab1:
-            st.markdown("""
-            <div style="background-color:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd; margin-bottom:20px;">
-                <h5 style="margin:0 0 10px 0;">💡 図の見方 (Legend)</h5>
-                <p style="margin:0;">各ノード（発言）を、話題の近さに応じて2次元マップ上に配置したものです。線は議論の親子関係を表します。</p>
-                <ul style="font-size: smaller; margin-bottom:0;">
-                    <li><b>ノードの位置 (X軸):</b> 議論の主要なテーマの方向（左右）</li>
-                    <li><b>ノードの位置 (Y軸):</b> 議論の二番目に重要なテーマの方向（上下）</li>
-                    <li><b>ノードの色:</b> 話題のスペクトル（X軸とY軸の組み合わせで決定）</li>
-                    <li><b>ノードの形:</b> ノードの種類（論点、提案など）</li>
-                    <li><b>ノードのテキスト:</b> 発言者と内容の要約</li>
-                    <li><b>点と点の距離:</b> 話題の近さ</li>
-                    <li><b>線:</b> 議論の親子関係</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            topic_map_chart = TopicMapPlotter.generate_plot(graph)
-            if topic_map_chart:
-                st.altair_chart(topic_map_chart, use_container_width=True)
-            else:
-                st.info("トピックマップの描画には、2つ以上のノードと「トピックマップ分析」の実行が必要です。")
-            
-            with st.expander("詳細データを見る"):
-                st.json(graph.model_dump())
+        # 選択された距離指標をプロッターに渡す
+        timeline_chart = TopicMapPlotter.generate_timeline_plot(graph, st.session_state["distance_metric"])
+        if timeline_chart:
+            st.altair_chart(timeline_chart, use_container_width=True)
+        else:
+            st.info("分析を実行してください。")
 
-        with tab2:
-            st.markdown("""
-            <div style="background-color:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd; margin-bottom:20px;">
-                <h5 style="margin:0 0 10px 0;">💡 図の見方 (Legend)</h5>
-                <p style="margin:0;">会話の進行順にノードが横一直線上に並び、各ノードの色の変化で話題の移り変わりを追います。</p>
-                <ul style="font-size: smaller; margin-bottom:0;">
-                    <li><b>横軸:</b> 会話の進行順（時間）</li>
-                    <li><b>縦軸:</b> （明示的な意味はありませんが、ノード配置の基準となります）</li>
-                    <li><b>ノードの色:</b> 話題のスペクトル（トピックマップと同じ、X軸とY軸の組み合わせで決定）</li>
-                    <li><b>ノードの形:</b> ノードの種類（論点、提案など）</li>
-                    <li><b>ノードのテキスト:</b> 発言者と内容の要約</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-
-            timeline_chart = TopicMapPlotter.generate_timeline_plot(graph) # 新しいメソッドを呼び出し
-            if timeline_chart:
-                st.altair_chart(timeline_chart, use_container_width=True)
-            else:
-                st.info("時間軸分析の描画には、2つ以上のノードと「トピック分析」の実行が必要です。")
-
-            with st.expander("詳細データを見る"):
-                st.json(graph.model_dump())
+        with st.expander("詳細データを見る"):
+            st.json(graph.model_dump())
 
     else:
         st.info("👈 左のサイドバーから「構造化を実行」してください。")

@@ -10,6 +10,7 @@ class Node(BaseModel):
     position_2d: list[float] | None = None # 2D座標 (PCAなどで削減された結果)
     embedding: list[float] | None = None # LLMによるベクトル表現
     cosine_sim_to_first: float | None = None # 最初のノードとのコサイン類似度 (色相決定用)
+    euclidean_distance_to_first: float | None = None # 最初のノードとのユークリッド距離 (色相決定用)
 
 class Edge(BaseModel):
     source: str

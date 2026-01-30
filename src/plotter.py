@@ -1,11 +1,10 @@
 import pandas as pd
 import altair as alt
 import textwrap
-import colorsys # colorsysをインポート
+import colorsys
 from .models import ArgumentGraph
 
 class TopicMapPlotter:
-    # ノードタイプと日本語名のマッピング
     NODE_TYPE_MAP = {
         'issue': '論点',
         'position': '提案',
@@ -14,113 +13,77 @@ class TopicMapPlotter:
     }
 
     @staticmethod
-    def _prepare_node_data(graph: ArgumentGraph):
+    def _prepare_node_data(graph: ArgumentGraph, distance_metric: str):
         """共通のノードデータ準備処理"""
         node_data = []
         for node in graph.nodes:
             speaker_prefix = f"{node.speaker}" if node.speaker else "不明"
             content_summary = (node.content[:30] + '...') if len(node.content) > 30 else node.content
-            
-            # 内容の要約部分を自動で折り返し
             wrapped_content = '\n'.join(textwrap.wrap(content_summary, width=15))
-            
             label_text = f"{speaker_prefix}\n{wrapped_content}"
             
             node_data.append({
                 "id": node.id,
-                "x_topic": node.position_2d[0] if node.position_2d else 0,
-                "y_topic": node.position_2d[1] if node.position_2d else 0,
                 "sequence": node.sequence,
                 "speaker": node.speaker or "不明",
                 "content_full": node.content,
                 "label_text": label_text,
                 "type": node.type,
                 "type_jp": TopicMapPlotter.NODE_TYPE_MAP.get(node.type, node.type),
-                "cosine_sim_to_first": node.cosine_sim_to_first # コサイン類似度を追加
+                "cosine_sim_to_first": node.cosine_sim_to_first,
+                "euclidean_distance_to_first": node.euclidean_distance_to_first,
+                "value_for_color": 0.0, # 色計算用の値を初期化
+                "tooltip_value": 0.0,
             })
         nodes_df = pd.DataFrame(node_data)
-        
-        # HSVカラーマッピング処理
-        if not nodes_df.empty and 'cosine_sim_to_first' in nodes_df.columns:
-            # コサイン類似度を色相(H)にマッピング (0-1の範囲)
-            # コサイン類似度は-1から1の範囲。これを0から1の色相に線形マッピング
-            # 例えば、-1を0 (赤)、0を0.5 (緑)、1を1 (赤に戻る) のようにマッピング。
-            # 今回は、-1を0 (赤)、1を0.66 (青) の範囲にマッピングしてみる。
-            # H = (cosine_sim + 1) / 2 とすると、-1が0、1が1になる。
-            # 0.0 (赤) から 0.66 (青) の範囲で色相を変化させる。
-            nodes_df['h'] = nodes_df['cosine_sim_to_first'].apply(lambda x: (x + 1) / 2 * 0.66) # -1 -> 0, 1 -> 0.66
+        if nodes_df.empty:
+            return None, "Default"
 
-            # 彩度(S)と明度(V)は固定
-            fixed_s = 0.9 # 鮮やかに
-            fixed_v = 0.9 # 明るく
-            
-            # HSVからRGBに変換
-            nodes_df['color_rgb'] = nodes_df.apply(
-                lambda row: '#%02x%02x%02x' % tuple(int(x * 255) for x in colorsys.hsv_to_rgb(row['h'], fixed_s, fixed_v)), 
-                axis=1
+        # --- 色計算とツールチップのためのデータ準備 ---
+        tooltip_title = "距離/類似度"
+        if distance_metric == "コサイン類似度":
+            tooltip_title = "コサイン類似度"
+            value_col = 'cosine_sim_to_first'
+            if value_col in nodes_df.columns and nodes_df[value_col].notna().any():
+                nodes_df['tooltip_value'] = nodes_df[value_col]
+                # (-1 to 1) -> (0 to 1) for hue
+                nodes_df['value_for_color'] = nodes_df[value_col].apply(lambda x: (x + 1) / 2 if x is not None else 0)
+
+        elif distance_metric == "ユークリッド距離":
+            tooltip_title = "ユークリッド距離"
+            value_col = 'euclidean_distance_to_first'
+            if value_col in nodes_df.columns and nodes_df[value_col].notna().any():
+                nodes_df['tooltip_value'] = nodes_df[value_col]
+                max_dist = nodes_df[value_col].max()
+                if max_dist > 0:
+                    # (0 to max_dist) -> (0 to 1) and inverted for hue
+                    nodes_df['value_for_color'] = nodes_df[value_col].apply(lambda x: 1 - (x / max_dist) if x is not None else 0)
+                else:
+                    nodes_df['value_for_color'] = 1.0 # all zero distance
+
+        # --- HSVカラーマッピング処理 ---
+        if 'value_for_color' in nodes_df.columns:
+            # 0.0 (赤) から 0.66 (青) の範囲で色相を変化させる
+            nodes_df['h'] = nodes_df['value_for_color'].apply(lambda x: x * 0.66)
+            fixed_s, fixed_v = 0.9, 0.9
+            nodes_df['color_rgb'] = nodes_df['h'].apply(
+                lambda h: '#%02x%02x%02x' % tuple(int(c * 255) for c in colorsys.hsv_to_rgb(h, fixed_s, fixed_v))
             )
         else:
-            # cosine_sim_to_firstがない場合、デフォルト色を設定
-            nodes_df['color_rgb'] = '#808080' # 灰色
-        
-        return nodes_df
+            nodes_df['color_rgb'] = '#808080'
+            
+        return nodes_df, tooltip_title
 
     @staticmethod
-    def generate_plot(graph: ArgumentGraph):
-        """トピックマップ（散布図）を生成する"""
-        nodes_df = TopicMapPlotter._prepare_node_data(graph)
-        if nodes_df is None or nodes_df.empty or len(nodes_df) < 2:
-            return None
-
-        # エッジデータ準備
-        edge_data = []
-        node_pos_map = {node["id"]: (node["x_topic"], node["y_topic"]) for _, node in nodes_df.iterrows()}
-        for edge in graph.edges:
-            source_pos, target_pos = node_pos_map.get(edge.source), node_pos_map.get(edge.target)
-            if source_pos and target_pos:
-                edge_data.append({
-                    "x1": source_pos[0], "y1": source_pos[1],
-                    "x2": target_pos[0], "y2": target_pos[1],
-                    "label": edge.label,
-                    "mid_x": (source_pos[0] + target_pos[0]) / 2,
-                    "mid_y": (source_pos[1] + target_pos[1]) / 2
-                })
-        edges_df = pd.DataFrame(edge_data)
-
-        # グラフ構築
-        base = alt.Chart(nodes_df).encode(
-            x=alt.X('x_topic', axis=None),
-            y=alt.Y('y_topic', axis=None)
-        )
-        edge_layer = alt.Chart(edges_df).mark_rule(color='gray', opacity=0.5).encode(x='x1', y='y1', x2='x2', y2='y2')
-        edge_label_layer = alt.Chart(edges_df).mark_text(
-            align='center', baseline='middle', fontSize=9, color='gray', dy=-8
-        ).encode(x='mid_x:Q', y='mid_y:Q', text='label:N')
-
-        background_shape_layer = base.mark_point(size=5000, opacity=0.9, filled=True).encode(
-            color=alt.Color('color_rgb:N', scale=None),
-            shape=alt.Shape('type_jp:N', title="ノード種別", scale=alt.Scale(
-                domain=list(TopicMapPlotter.NODE_TYPE_MAP.values()),
-                range=['circle', 'square', 'triangle-right', 'diamond']
-            )),
-            tooltip=[alt.Tooltip('content_full:N', title='内容'), alt.Tooltip('id:N', title='ノードID'), alt.Tooltip('cosine_sim_to_first:Q', title='コサイン類似度', format='.2f')]
-        )
-        foreground_text_layer = base.mark_text(
-            align='center', baseline='middle', fontSize=10, color='black', lineBreak='\n', opacity=0.9
-        ).encode(text=alt.Text('label_text:N'))
-
-        return (edge_layer + edge_label_layer + background_shape_layer + foreground_text_layer).properties(
-            width=700, height=500
-        ).interactive()
-
-    @staticmethod
-    def generate_timeline_plot(graph: ArgumentGraph):
+    def generate_timeline_plot(graph: ArgumentGraph, distance_metric: str):
         """時系列分析チャートを生成する"""
-        valid_nodes_df = TopicMapPlotter._prepare_node_data(graph)
-        valid_nodes_df = valid_nodes_df[valid_nodes_df['sequence'].notna()]
+        valid_nodes_df, tooltip_title = TopicMapPlotter._prepare_node_data(graph, distance_metric)
         if valid_nodes_df is None or valid_nodes_df.empty or len(valid_nodes_df) < 2:
             return None
-        valid_nodes_df = valid_nodes_df.sort_values(by='sequence').reset_index(drop=True)
+        
+        valid_nodes_df = valid_nodes_df[valid_nodes_df['sequence'].notna()].sort_values(by='sequence').reset_index(drop=True)
+        if valid_nodes_df.empty:
+            return None
 
         # エッジデータ準備
         edge_data = []
@@ -146,13 +109,20 @@ class TopicMapPlotter:
             align='center', baseline='middle', fontSize=9, color='gray', dy=-8
         ).encode(x='mid_x:Q', y='y1:N', text='label:N')
 
+        # 動的なツールチップ
+        tooltip_content = [
+            alt.Tooltip('content_full:N', title='内容'),
+            alt.Tooltip('id:N', title='ノードID'),
+            alt.Tooltip('tooltip_value:Q', title=tooltip_title, format='.2f')
+        ]
+
         background_shape_layer = base.mark_point(size=5000, opacity=0.9, filled=True).encode(
             color=alt.Color('color_rgb:N', scale=None),
             shape=alt.Shape('type_jp:N', title="ノード種別", scale=alt.Scale(
                 domain=list(TopicMapPlotter.NODE_TYPE_MAP.values()),
                 range=['circle', 'square', 'triangle-right', 'diamond']
             )),
-            tooltip=[alt.Tooltip('content_full:N', title='内容'), alt.Tooltip('id:N', title='ノードID'), alt.Tooltip('cosine_sim_to_first:Q', title='コサイン類似度', format='.2f')]
+            tooltip=tooltip_content
         )
         foreground_text_layer = base.mark_text(
             align='center', baseline='middle', fontSize=10, color='black', lineBreak='\n', opacity=0.9
