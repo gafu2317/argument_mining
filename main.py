@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from src.strategies.ibis import IBISStrategy
 from src.strategies.toulmin import ToulminStrategy
 from src.llm import LLMClient
-from src.clustering import reduce_dimensions_pca
 from src.plotter import TopicMapPlotter
 from src.models import ArgumentGraph
 
@@ -85,7 +84,6 @@ def main():
                         
                         graph = strategy.analyze(text_area_val)
                         for node in graph.nodes:
-                            node.position_2d = None
                             node.embedding = None
                             node.cosine_sim_to_first = None
                             node.euclidean_distance_to_first = None
@@ -116,10 +114,6 @@ def main():
                                         # ユークリッド距離
                                         dist = np.linalg.norm(node_embedding - first_node_embedding)
                                         node.euclidean_distance_to_first = dist
-                            
-                            positions = reduce_dimensions_pca(vectors)
-                            for i, node in enumerate(graph.nodes):
-                                node.position_2d = positions[i]
                             
                             st.session_state["graph_data"] = graph
                             

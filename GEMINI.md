@@ -65,13 +65,3 @@ To run this application, follow these steps:
 
 *   **State Management:** The Streamlit session state (`st.session_state`) is used to persist the generated graph data across user interactions, preventing re-analysis on every UI update.
 
-ユークリッド距離かコサイン類似度を使って次元数を削減せずに色に変換する
-HSVも使ってみる
-実際のユークリッド距離やコサイン類似度を表示する
-仮説として色の変化が話題の脱線とリンクしている
-    話題がずれていないのに、色が変わりすぎていることは避けたい
-
-極端な逸脱をログをつける
-逸脱をした後に元の話題に戻す
-ユークリッドでもやってみる
-コサイン類似度の実装をみる
