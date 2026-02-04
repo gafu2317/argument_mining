@@ -2,7 +2,8 @@ import pandas as pd
 import altair as alt
 import textwrap
 import colorsys
-from .models import ArgumentGraph
+from .models import ArgumentGraph, Node
+from typing import List, Tuple, Optional
 
 class TopicMapPlotter:
     NODE_TYPE_MAP = {
@@ -13,74 +14,78 @@ class TopicMapPlotter:
     }
 
     @staticmethod
-    def _prepare_node_data(graph: ArgumentGraph, distance_metric: str):
-        """共通のノードデータ準備処理"""
+    def _prepare_node_data(nodes: List[Node], color_metric: str, color_comparison: str) -> Tuple[Optional[pd.DataFrame], str]:
+        """ノードデータを準備し、色計算を行う"""
+        if not nodes:
+            return None, "Default"
+
         node_data = []
-        for node in graph.nodes:
+        for node in nodes:
             speaker_prefix = f"{node.speaker}" if node.speaker else "不明"
             content_summary = (node.content[:30] + '...') if len(node.content) > 30 else node.content
             wrapped_content = '\n'.join(textwrap.wrap(content_summary, width=15))
             label_text = f"{speaker_prefix}\n{wrapped_content}"
             
             node_data.append({
-                "id": node.id,
-                "sequence": node.sequence,
-                "speaker": node.speaker or "不明",
-                "content_full": node.content,
-                "label_text": label_text,
-                "type": node.type,
+                "id": node.id, "sequence": node.sequence, "speaker": node.speaker or "不明",
+                "content_full": node.content, "label_text": label_text, "type": node.type,
                 "type_jp": TopicMapPlotter.NODE_TYPE_MAP.get(node.type, node.type),
                 "cosine_sim_to_first": node.cosine_sim_to_first,
                 "euclidean_distance_to_first": node.euclidean_distance_to_first,
-                "value_for_color": 0.0, # 色計算用の値を初期化
-                "tooltip_value": 0.0,
+                "similarity_to_previous": node.similarity_to_previous,
+                "distance_from_previous": node.distance_from_previous,
+                "value_for_color": 1.0, "tooltip_value": 0.0,
             })
+        
         nodes_df = pd.DataFrame(node_data)
         if nodes_df.empty:
             return None, "Default"
 
         # --- 色計算とツールチップのためのデータ準備 ---
-        tooltip_title = "距離/類似度"
-        if distance_metric == "コサイン類似度":
-            tooltip_title = "コサイン類似度"
-            value_col = 'cosine_sim_to_first'
-            if value_col in nodes_df.columns and nodes_df[value_col].notna().any():
-                nodes_df['tooltip_value'] = nodes_df[value_col]
-                # (-1 to 1) -> (0 to 1) for hue
-                nodes_df['value_for_color'] = nodes_df[value_col].apply(lambda x: (x + 1) / 2 if x is not None else 0)
+        is_distance = "距離" in color_metric
+        is_previous_comparison = "直前" in color_comparison
 
-        elif distance_metric == "ユークリッド距離":
-            tooltip_title = "ユークリッド距離"
-            value_col = 'euclidean_distance_to_first'
-            if value_col in nodes_df.columns and nodes_df[value_col].notna().any():
-                nodes_df['tooltip_value'] = nodes_df[value_col]
-                max_dist = nodes_df[value_col].max()
-                if max_dist > 0:
-                    # (0 to max_dist) -> (0 to 1) and inverted for hue
-                    nodes_df['value_for_color'] = nodes_df[value_col].apply(lambda x: 1 - (x / max_dist) if x is not None else 0)
+        if is_previous_comparison:
+            value_col = 'distance_from_previous' if is_distance else 'similarity_to_previous'
+            tooltip_title = "直前との" + ("距離" if is_distance else "類似度")
+        else: # 開始点
+            value_col = 'euclidean_distance_to_first' if is_distance else 'cosine_sim_to_first'
+            tooltip_title = "開始点との" + ("距離" if is_distance else "類似度")
+
+        if value_col in nodes_df.columns and nodes_df[value_col].notna().any():
+            nodes_df['tooltip_value'] = nodes_df[value_col]
+            
+            if is_distance: # ユークリッド距離
+                max_val = nodes_df[value_col].max()
+                if max_val > 0:
+                    # 距離が大きいほど赤 (色相=0) になるよう反転
+                    nodes_df['value_for_color'] = nodes_df[value_col].apply(lambda x: 1 - (x / max_val) if x is not None else 1.0)
                 else:
-                    nodes_df['value_for_color'] = 1.0 # all zero distance
-
+                    nodes_df['value_for_color'] = 1.0 # 全て青
+            else: # コサイン類似度
+                # 類似度が高いほど青 (色相=0.66)
+                # (-1 to 1) -> (0 to 1) for hue
+                nodes_df['value_for_color'] = nodes_df[value_col].apply(lambda x: (x + 1) / 2 if x is not None else 0.0)
+        
         # --- HSVカラーマッピング処理 ---
-        if 'value_for_color' in nodes_df.columns:
-            # 0.0 (赤) から 0.66 (青) の範囲で色相を変化させる
-            nodes_df['h'] = nodes_df['value_for_color'].apply(lambda x: x * 0.66)
-            fixed_s, fixed_v = 0.9, 0.9
-            nodes_df['color_rgb'] = nodes_df['h'].apply(
-                lambda h: '#%02x%02x%02x' % tuple(int(c * 255) for c in colorsys.hsv_to_rgb(h, fixed_s, fixed_v))
-            )
-        else:
-            nodes_df['color_rgb'] = '#808080'
+        # 0.0 (赤) から 0.66 (青) の範囲で色相を変化させる
+        nodes_df['h'] = nodes_df['value_for_color'].apply(lambda x: x * 0.66)
+        fixed_s, fixed_v = 0.9, 0.9
+        nodes_df['color_rgb'] = nodes_df['h'].apply(
+            lambda h: '#%02x%02x%02x' % tuple(int(c * 255) for c in colorsys.hsv_to_rgb(h, fixed_s, fixed_v))
+        )
             
         return nodes_df, tooltip_title
 
     @staticmethod
-    def generate_timeline_plot(graph: ArgumentGraph, distance_metric: str):
+    def generate_timeline_plot(graph: ArgumentGraph, color_metric: str, color_comparison: str):
         """時系列分析チャートを生成する"""
-        valid_nodes_df, tooltip_title = TopicMapPlotter._prepare_node_data(graph, distance_metric)
-        if valid_nodes_df is None or valid_nodes_df.empty or len(valid_nodes_df) < 2:
+        valid_nodes_df, tooltip_title = TopicMapPlotter._prepare_node_data(graph.nodes, color_metric, color_comparison)
+        
+        if valid_nodes_df is None or valid_nodes_df.empty:
             return None
         
+        # sequenceがNaNの行を除外
         valid_nodes_df = valid_nodes_df[valid_nodes_df['sequence'].notna()].sort_values(by='sequence').reset_index(drop=True)
         if valid_nodes_df.empty:
             return None
@@ -104,16 +109,19 @@ class TopicMapPlotter:
             x=alt.X('sequence:Q', axis=alt.Axis(title='時系列順', grid=True)),
             y=alt.Y('speaker:N', axis=alt.Axis(title='発言者'))
         )
-        argument_edge_layer = alt.Chart(edges_df).mark_rule(color='gray', opacity=0.6).encode(x='x1:Q', y='y1:N', x2='x2:Q', y2='y2:N')
-        edge_label_layer = alt.Chart(edges_df).mark_text(
-            align='center', baseline='middle', fontSize=9, color='gray', dy=-8
-        ).encode(x='mid_x:Q', y='y1:N', text='label:N')
+        
+        layers = []
+        if not edges_df.empty:
+            argument_edge_layer = alt.Chart(edges_df).mark_rule(color='gray', opacity=0.6).encode(x='x1:Q', y='y1:N', x2='x2:Q', y2='y2:N')
+            edge_label_layer = alt.Chart(edges_df).mark_text(
+                align='center', baseline='middle', fontSize=9, color='gray', dy=-8
+            ).encode(x='mid_x:Q', y='y1:N', text='label:N')
+            layers.extend([argument_edge_layer, edge_label_layer])
 
-        # 動的なツールチップ
         tooltip_content = [
             alt.Tooltip('content_full:N', title='内容'),
             alt.Tooltip('id:N', title='ノードID'),
-            alt.Tooltip('tooltip_value:Q', title=tooltip_title, format='.2f')
+            alt.Tooltip('tooltip_value:Q', title=tooltip_title, format='.3f')
         ]
 
         background_shape_layer = base.mark_point(size=5000, opacity=0.9, filled=True).encode(
@@ -128,6 +136,8 @@ class TopicMapPlotter:
             align='center', baseline='middle', fontSize=10, color='black', lineBreak='\n', opacity=0.9
         ).encode(text=alt.Text('label_text:N'))
 
-        return (argument_edge_layer + edge_label_layer + background_shape_layer + foreground_text_layer).properties(
+        layers.extend([background_shape_layer, foreground_text_layer])
+
+        return alt.layer(*layers).properties(
             width=700, height=300
         ).interactive()

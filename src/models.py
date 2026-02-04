@@ -3,13 +3,17 @@ from pydantic import BaseModel
 
 class Node(BaseModel):
     id: str
-    content: str
+    content: str # UI表示用の要約
+    original_text: str | None = None # ベクトル化に使用する、会話ログからの生の抜粋
     speaker: str | None = None
     type: str
     sequence: int | None = None
-    embedding: list[float] | None = None # LLMによるベクトル表現
-    cosine_sim_to_first: float | None = None # 最初のノードとのコサイン類似度 (色相決定用)
-    euclidean_distance_to_first: float | None = None # 最初のノードとのユークリッド距離 (色相決定用)
+    embedding: list[float] | None = None
+    cosine_sim_to_first: float | None = None
+    euclidean_distance_to_first: float | None = None
+    similarity_to_previous: float | None = None
+    distance_from_previous: float | None = None
+
 
 class Edge(BaseModel):
     source: str
