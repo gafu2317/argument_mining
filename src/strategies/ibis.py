@@ -11,10 +11,10 @@ class IBISStrategy(MiningStrategy):
 あなたは議論構造化のプロフェッショナルです。IBISモデルに基づいて会話ログを構造化してください。
 
 # Definitions (ノードの定義)
-- **issue**: 議論の論点や問い (Shape: Circle)
-- **position**: 問いに対する提案や意見 (Shape: Rect)
-- **argument**: 提案に対する根拠・支持・懸念 (Shape: Tag)
-- **decision**: 最終的な決定事項 (Shape: Hexagon)
+- **issue**: 議論の論点や問い
+- **position**: 問いに対する提案や意見
+- **argument**: 提案に対する根拠・支持・懸念
+- **decision**: 最終的な決定事項
 
 # Rules (抽出ルール)
 1. 会話から主要なIssue(論点)を特定する。
@@ -25,7 +25,7 @@ class IBISStrategy(MiningStrategy):
 6. **全ての主要な発言を省略せず、それぞれノードとして抽出すること。**
 7. **`content`** フィールドには、抽出したノードの内容を **日本語で簡潔に要約** して格納すること。
 8. **`original_text`** フィールドには、そのノードの根拠となった会話ログの該当部分を **変更せずにそのまま** 格納すること。
-9. 各ノードには、会話ログにおける出現順を示す `sequence` (1から始まる整数) を必ず付与すること。
+9. 各ノードには、入力された会話ログの**元の行番号**に対応する `sequence` (1から始まる整数) を必ず付与すること。ノードの生成順序に関わらず、元の会話ログの行番号を反映させること。
 
 # Edge Labels (矢印のラベル定義)
 以下の日本語ラベルを使用してください：
@@ -41,7 +41,6 @@ Strictly output in JSON format matching this schema:
   "nodes": [
     {
       "id": "n1",
-      "type": "issue",
       "content": "APIの仕様が不明",
       "original_text": "Aさん: それが少し問題で...。APIの仕様について、ドキュメントに記載がない部分があって困っています。",
       "speaker": "Aさん",
@@ -49,7 +48,6 @@ Strictly output in JSON format matching this schema:
     },
     {
       "id": "n2",
-      "type": "position",
       "content": "新作ゲームで遊ぶ",
       "original_text": "Cさん: ドキュメントといえば、昨日公開された新しいMMORPGの「クリスタル・ファンタジア」の公式サイト、すごい作り込みだったよね。",
       "speaker": "Cさん",
@@ -58,7 +56,7 @@ Strictly output in JSON format matching this schema:
   ],
   "edges": []
 }
-Note: `type` must be strictly one of: "issue", "position", "argument", "decision". For edges, use `source` and `target` to link node IDs. Example: `{"source": "n1", "target": "n2", "label": "提案"}`.
+Note: For edges, use `source` and `target` to link node IDs. Example: `{"source": "n1", "target": "n2", "label": "提案"}`.
 """
         # LLMを実行
         data = llm.fetch_json(system_prompt, text)

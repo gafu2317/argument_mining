@@ -6,12 +6,6 @@ from .models import ArgumentGraph, Node
 from typing import List, Tuple, Optional
 
 class TopicMapPlotter:
-    NODE_TYPE_MAP = {
-        'issue': '論点',
-        'position': '提案',
-        'argument': '根拠',
-        'decision': '決定'
-    }
 
     @staticmethod
     def _prepare_node_data(nodes: List[Node], color_metric: str, color_comparison: str) -> Tuple[Optional[pd.DataFrame], str]:
@@ -28,8 +22,7 @@ class TopicMapPlotter:
             
             node_data.append({
                 "id": node.id, "sequence": node.sequence, "speaker": node.speaker or "不明",
-                "content_full": node.content, "label_text": label_text, "type": node.type,
-                "type_jp": TopicMapPlotter.NODE_TYPE_MAP.get(node.type, node.type),
+                "content_full": node.content, "label_text": label_text,
                 "cosine_sim_to_first": node.cosine_sim_to_first,
                 "euclidean_distance_to_first": node.euclidean_distance_to_first,
                 "similarity_to_previous": node.similarity_to_previous,
@@ -126,10 +119,6 @@ class TopicMapPlotter:
 
         background_shape_layer = base.mark_point(size=5000, opacity=0.9, filled=True).encode(
             color=alt.Color('color_rgb:N', scale=None),
-            shape=alt.Shape('type_jp:N', title="ノード種別", scale=alt.Scale(
-                domain=list(TopicMapPlotter.NODE_TYPE_MAP.values()),
-                range=['circle', 'square', 'triangle-right', 'diamond']
-            )),
             tooltip=tooltip_content
         )
         foreground_text_layer = base.mark_text(

@@ -35,6 +35,9 @@ class LLMClient:
             )
             
             content = response.choices[0].message.content
+            # デバッグ用にLLMの生出力をファイルに保存
+            with open("llm_raw_output.json", "w", encoding="utf-8") as f:
+                f.write(content)
             return json.loads(content)
             
         except Exception as e:

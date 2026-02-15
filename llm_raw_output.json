@@ -1,0 +1,76 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "issue",
+      "content": "APIの仕様が不明",
+      "original_text": "Aさん: それが少し問題で...。APIの仕様について、ドキュメントに記載がない部分があって困っています。",
+      "speaker": "Aさん",
+      "sequence": 1
+    },
+    {
+      "id": "n2",
+      "type": "position",
+      "content": "タスクAのバックエンド実装が完了",
+      "original_text": "Aさん: タスクAの進捗ですが、バックエンドの実装は完了しました。",
+      "speaker": "Aさん",
+      "sequence": 2
+    },
+    {
+      "id": "n3",
+      "type": "position",
+      "content": "フロントエンドとの結合の進捗を確認",
+      "original_text": "Bさん: 素晴らしい！フロントエンドとの結合はどうなっていますか？",
+      "speaker": "Bさん",
+      "sequence": 3
+    },
+    {
+      "id": "n4",
+      "type": "position",
+      "content": "新作MMORPG「クリスタル・ファンタジア」の話題",
+      "original_text": "Cさん: ドキュメントといえば、昨日公開された新しいMMORPGの「クリスタル・ファンタジア」の公式サイト、すごい作り込みだったよね。",
+      "speaker": "Cさん",
+      "sequence": 4
+    },
+    {
+      "id": "n5",
+      "type": "position",
+      "content": "ゲームのグラフィックが綺麗",
+      "original_text": "Bさん: え、もうやった？ 昨日の夜から始めたけど、グラフィックが綺麗で驚いた。",
+      "speaker": "Bさん",
+      "sequence": 5
+    },
+    {
+      "id": "n6",
+      "type": "position",
+      "content": "タンク役のナイトを選択",
+      "original_text": "Aさん: 僕もやりました！ジョブは何にしました？ 僕はタンク役のナイトです。",
+      "speaker": "Aさん",
+      "sequence": 6
+    },
+    {
+      "id": "n7",
+      "type": "position",
+      "content": "ヒーラーを選択",
+      "original_text": "Cさん: 私はヒーラー。今夜あたり一緒にパーティ組んでダンジョン行きませんか？",
+      "speaker": "Cさん",
+      "sequence": 7
+    },
+    {
+      "id": "n8",
+      "type": "position",
+      "content": "21時にゲーム内で集合",
+      "original_text": "Bさん: ぜひ！じゃあ、21時にゲーム内で集合で！",
+      "speaker": "Bさん",
+      "sequence": 8
+    }
+  ],
+  "edges": [
+    {"source": "n2", "target": "n3", "label": "提案"},
+    {"source": "n1", "target": "n2", "label": "提案"},
+    {"source": "n4", "target": "n5", "label": "提案"},
+    {"source": "n5", "target": "n6", "label": "提案"},
+    {"source": "n6", "target": "n7", "label": "提案"},
+    {"source": "n7", "target": "n8", "label": "提案"}
+  ]
+}

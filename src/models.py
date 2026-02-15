@@ -6,7 +6,6 @@ class Node(BaseModel):
     content: str # UI表示用の要約
     original_text: str | None = None # ベクトル化に使用する、会話ログからの生の抜粋
     speaker: str | None = None
-    type: str
     sequence: int | None = None
     embedding: list[float] | None = None
     cosine_sim_to_first: float | None = None
