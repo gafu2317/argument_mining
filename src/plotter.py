@@ -5,7 +5,25 @@ import colorsys
 from .models import ArgumentGraph, Node
 from typing import List, Tuple, Optional
 
+_NODE_FONT_SIZE = 9
+_NODE_CHARS_PER_LINE = 8
+_NODE_MAX_CONTENT_CHARS = _NODE_CHARS_PER_LINE * 2  # 最大2行分
+
 class TopicMapPlotter:
+
+    @staticmethod
+    def _compute_node_sizes(label_text: str, padding: int = 8) -> Tuple[float, float]:
+        """テキスト量に応じたノードボックスの面積（mark_point size）を計算する。
+        日本語（全角）は font_size px、ASCII は 0.6 * font_size px として幅を推定。"""
+        lines = label_text.split('\n')
+        max_line_px = 0.0
+        for line in lines:
+            line_px = sum(_NODE_FONT_SIZE if ord(c) > 127 else _NODE_FONT_SIZE * 0.6 for c in line)
+            max_line_px = max(max_line_px, line_px)
+        height_px = len(lines) * _NODE_FONT_SIZE * 1.4
+        inner_side = max(max_line_px, height_px) + padding * 2
+        outer_side = inner_side + 14  # ボーダー幅 7px
+        return outer_side ** 2, inner_side ** 2
 
     @staticmethod
     def _prepare_node_data(nodes: List[Node], color_metric: str, color_comparison: str) -> Tuple[Optional[pd.DataFrame], str]:
@@ -15,11 +33,12 @@ class TopicMapPlotter:
 
         node_data = []
         for node in nodes:
-            speaker_prefix = f"{node.speaker}" if node.speaker else "不明"
-            content_summary = (node.content[:30] + '...') if len(node.content) > 30 else node.content
-            wrapped_content = '\n'.join(textwrap.wrap(content_summary, width=15))
+            speaker_prefix = (node.speaker[:6] if node.speaker else "不明")
+            content_summary = node.content[:_NODE_MAX_CONTENT_CHARS]
+            wrapped_content = '\n'.join(textwrap.wrap(content_summary, width=_NODE_CHARS_PER_LINE))
             label_text = f"{speaker_prefix}\n{wrapped_content}"
-            
+            outer_size, inner_size = TopicMapPlotter._compute_node_sizes(label_text)
+
             node_data.append({
                 "id": node.id, "sequence": node.sequence, "speaker": node.speaker or "不明",
                 "content_full": node.content, "label_text": label_text,
@@ -28,6 +47,7 @@ class TopicMapPlotter:
                 "similarity_to_previous": node.similarity_to_previous,
                 "distance_from_previous": node.distance_from_previous,
                 "value_for_color": 1.0, "tooltip_value": 0.0,
+                "outer_size": outer_size, "inner_size": inner_size,
             })
         
         nodes_df = pd.DataFrame(node_data)
@@ -117,15 +137,19 @@ class TopicMapPlotter:
             alt.Tooltip('tooltip_value:Q', title=tooltip_title, format='.3f')
         ]
 
-        background_shape_layer = base.mark_point(size=5000, opacity=0.9, filled=True).encode(
+        border_layer = base.mark_point(shape='square', filled=True, opacity=1.0).encode(
             color=alt.Color('color_rgb:N', scale=None),
+            size=alt.Size('outer_size:Q', scale=None, legend=None),
             tooltip=tooltip_content
         )
+        white_bg_layer = base.mark_point(shape='square', filled=True, color='white', opacity=1.0).encode(
+            size=alt.Size('inner_size:Q', scale=None, legend=None)
+        )
         foreground_text_layer = base.mark_text(
-            align='center', baseline='middle', fontSize=10, color='black', lineBreak='\n', opacity=0.9
+            align='center', baseline='middle', fontSize=_NODE_FONT_SIZE, color='black', lineBreak='\n'
         ).encode(text=alt.Text('label_text:N'))
 
-        layers.extend([background_shape_layer, foreground_text_layer])
+        layers.extend([border_layer, white_bg_layer, foreground_text_layer])
 
         return alt.layer(*layers).properties(
             width=700, height=300

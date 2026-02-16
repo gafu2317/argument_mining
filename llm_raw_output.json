@@ -2,75 +2,76 @@
   "nodes": [
     {
       "id": "n1",
-      "type": "issue",
-      "content": "APIの仕様が不明",
-      "original_text": "Aさん: それが少し問題で...。APIの仕様について、ドキュメントに記載がない部分があって困っています。",
-      "speaker": "Aさん",
+      "content": "新規サービスのバックエンド構成の選択",
+      "original_text": "田中(PM): 今回の新規サービスのバックエンド構成について決めたい。選択肢はマイクロサービスか、モノリスかだ。",
+      "speaker": "田中(PM)",
       "sequence": 1
     },
     {
       "id": "n2",
-      "type": "position",
-      "content": "タスクAのバックエンド実装が完了",
-      "original_text": "Aさん: タスクAの進捗ですが、バックエンドの実装は完了しました。",
-      "speaker": "Aさん",
+      "content": "マイクロサービスを推奨",
+      "original_text": "佐藤(TechLead): 私はマイクロサービスを推します。将来的に機能ごとにチームを分割しやすくなるし、デプロイの独立性が保てます。",
+      "speaker": "佐藤(TechLead)",
       "sequence": 2
     },
     {
       "id": "n3",
-      "type": "position",
-      "content": "フロントエンドとの結合の進捗を確認",
-      "original_text": "Bさん: 素晴らしい！フロントエンドとの結合はどうなっていますか？",
-      "speaker": "Bさん",
+      "content": "マイクロサービスはオーバーエンジニアリングの懸念",
+      "original_text": "鈴木(Infra): しかし、今のチーム規模（5名）でマイクロサービスはオーバーエンジニアリングではないですか？ サービス間通信のレイテンシや、分散トランザクションの管理コストが跳ね上がります。",
+      "speaker": "鈴木(Infra)",
       "sequence": 3
     },
     {
       "id": "n4",
-      "type": "position",
-      "content": "新作MMORPG「クリスタル・ファンタジア」の話題",
-      "original_text": "Cさん: ドキュメントといえば、昨日公開された新しいMMORPGの「クリスタル・ファンタジア」の公式サイト、すごい作り込みだったよね。",
-      "speaker": "Cさん",
+      "content": "将来的なユーザー数を考慮したマイクロサービスの支持",
+      "original_text": "佐藤(TechLead): 確かに初期コストは高いですが、このサービスは3年後にユーザー数100万人を目指しています。あとからモノリスを分割するのは地獄ですよ。",
+      "speaker": "佐藤(TechLead)",
       "sequence": 4
     },
     {
       "id": "n5",
-      "type": "position",
-      "content": "ゲームのグラフィックが綺麗",
-      "original_text": "Bさん: え、もうやった？ 昨日の夜から始めたけど、グラフィックが綺麗で驚いた。",
-      "speaker": "Bさん",
+      "content": "運用コストの懸念",
+      "original_text": "田中(PM): ふむ。スケールへの備えは必要だが、鈴木さんの言う「運用コスト」も無視できない。",
+      "speaker": "田中(PM)",
       "sequence": 5
     },
     {
       "id": "n6",
-      "type": "position",
-      "content": "タンク役のナイトを選択",
-      "original_text": "Aさん: 僕もやりました！ジョブは何にしました？ 僕はタンク役のナイトです。",
-      "speaker": "Aさん",
+      "content": "モジュラーモノリスの提案",
+      "original_text": "高橋(Member): 間をとって「モジュラーモノリス」はどうでしょう？ デプロイ単位は一つですが、内部のコードは明確に境界を分けておくんです。これなら後で分割もしやすいし、インフラ構成は単純で済みます。",
+      "speaker": "高橋(Member)",
       "sequence": 6
     },
     {
       "id": "n7",
-      "type": "position",
-      "content": "ヒーラーを選択",
-      "original_text": "Cさん: 私はヒーラー。今夜あたり一緒にパーティ組んでダンジョン行きませんか？",
-      "speaker": "Cさん",
+      "content": "モジュラーモノリスに賛成",
+      "original_text": "鈴木(Infra): それなら賛成です。インフラ管理も楽だし、開発スピードも落ちない。",
+      "speaker": "鈴木(Infra)",
       "sequence": 7
     },
     {
       "id": "n8",
-      "type": "position",
-      "content": "21時にゲーム内で集合",
-      "original_text": "Bさん: ぜひ！じゃあ、21時にゲーム内で集合で！",
-      "speaker": "Bさん",
+      "content": "モジュラーモノリスが現実的な解決策",
+      "original_text": "佐藤(TechLead): なるほど、規律を守って実装できるなら、それが一番現実的な解かもしれませんね。",
+      "speaker": "佐藤(TechLead)",
       "sequence": 8
+    },
+    {
+      "id": "n9",
+      "content": "モジュラーモノリスでスタートする決定",
+      "original_text": "田中(PM): よし、ではまずは「モジュラーモノリス」でスタートしよう。ディレクトリ構成の設計を頼む。",
+      "speaker": "田中(PM)",
+      "sequence": 9
     }
   ],
   "edges": [
-    {"source": "n2", "target": "n3", "label": "提案"},
-    {"source": "n1", "target": "n2", "label": "提案"},
-    {"source": "n4", "target": "n5", "label": "提案"},
-    {"source": "n5", "target": "n6", "label": "提案"},
-    {"source": "n6", "target": "n7", "label": "提案"},
-    {"source": "n7", "target": "n8", "label": "提案"}
+    {"source": "n2", "target": "n1", "label": "提案"},
+    {"source": "n3", "target": "n2", "label": "懸念"},
+    {"source": "n4", "target": "n2", "label": "支持"},
+    {"source": "n5", "target": "n3", "label": "懸念"},
+    {"source": "n6", "target": "n1", "label": "提案"},
+    {"source": "n7", "target": "n6", "label": "支持"},
+    {"source": "n8", "target": "n6", "label": "支持"},
+    {"source": "n9", "target": "n6", "label": "決定"}
   ]
 }
