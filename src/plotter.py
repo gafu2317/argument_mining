@@ -8,6 +8,13 @@ from typing import List, Tuple, Optional
 _NODE_FONT_SIZE = 9
 _NODE_CHARS_PER_LINE = 8
 _NODE_MAX_CONTENT_CHARS = _NODE_CHARS_PER_LINE * 2  # 最大2行分
+# 話者1行 + 内容最大2行 = 3行のテキストブロックを中央揃えにするためのdy
+_NODE_TEXT_DY = -round((_NODE_MAX_CONTENT_CHARS // _NODE_CHARS_PER_LINE) / 2 * _NODE_FONT_SIZE * 1.4)
+
+_NODE_TYPE_LABELS = {
+    "issue": "論点", "position": "提案",
+    "argument": "根拠", "decision": "決定",
+}
 
 class TopicMapPlotter:
 
@@ -36,11 +43,12 @@ class TopicMapPlotter:
             speaker_prefix = (node.speaker[:6] if node.speaker else "不明")
             content_summary = node.content[:_NODE_MAX_CONTENT_CHARS]
             wrapped_content = '\n'.join(textwrap.wrap(content_summary, width=_NODE_CHARS_PER_LINE))
+            type_label = _NODE_TYPE_LABELS.get((node.node_type or "").lower(), "?")
             label_text = f"{speaker_prefix}\n{wrapped_content}"
             outer_size, inner_size = TopicMapPlotter._compute_node_sizes(label_text)
-
             node_data.append({
                 "id": node.id, "sequence": node.sequence, "speaker": node.speaker or "不明",
+                "node_type": node.node_type or "", "type_label": type_label,
                 "content_full": node.content, "label_text": label_text,
                 "cosine_sim_to_first": node.cosine_sim_to_first,
                 "euclidean_distance_to_first": node.euclidean_distance_to_first,
@@ -112,8 +120,6 @@ class TopicMapPlotter:
                 edge_data.append({
                     "x1": source_node_info["sequence"], "y1": source_node_info["speaker"],
                     "x2": target_node_info["sequence"], "y2": target_node_info["speaker"],
-                    "label": edge.label,
-                    "mid_x": (source_node_info["sequence"] + target_node_info["sequence"]) / 2
                 })
         edges_df = pd.DataFrame(edge_data)
 
@@ -126,12 +132,10 @@ class TopicMapPlotter:
         layers = []
         if not edges_df.empty:
             argument_edge_layer = alt.Chart(edges_df).mark_rule(color='gray', opacity=0.6).encode(x='x1:Q', y='y1:N', x2='x2:Q', y2='y2:N')
-            edge_label_layer = alt.Chart(edges_df).mark_text(
-                align='center', baseline='middle', fontSize=9, color='gray', dy=-8
-            ).encode(x='mid_x:Q', y='y1:N', text='label:N')
-            layers.extend([argument_edge_layer, edge_label_layer])
+            layers.append(argument_edge_layer)
 
         tooltip_content = [
+            alt.Tooltip('node_type:N', title='種別'),
             alt.Tooltip('content_full:N', title='内容'),
             alt.Tooltip('id:N', title='ノードID'),
             alt.Tooltip('tooltip_value:Q', title=tooltip_title, format='.3f')
@@ -146,11 +150,26 @@ class TopicMapPlotter:
             size=alt.Size('inner_size:Q', scale=None, legend=None)
         )
         foreground_text_layer = base.mark_text(
-            align='center', baseline='middle', fontSize=_NODE_FONT_SIZE, color='black', lineBreak='\n'
+            align='center', baseline='middle', fontSize=_NODE_FONT_SIZE, color='black',
+            lineBreak='\n', dy=_NODE_TEXT_DY
         ).encode(text=alt.Text('label_text:N'))
 
-        layers.extend([border_layer, white_bg_layer, foreground_text_layer])
+        type_label_dy = -(int(valid_nodes_df['outer_size'].max() ** 0.5) // 2 + 8)
+        type_label_layer = base.mark_text(
+            align='center', baseline='bottom', fontSize=_NODE_FONT_SIZE - 1, color='#555555',
+            dy=type_label_dy
+        ).encode(
+            text=alt.Text('type_label:N'),
+        )
+
+        layers.extend([border_layer, white_bg_layer, foreground_text_layer, type_label_layer])
+
+        # ノードの最大サイズ（mark_point size は面積なので sqrt で辺長に変換）から
+        # バンドの高さを計算し、ノードが上下に見切れないようにする
+        node_height_px = int(valid_nodes_df['outer_size'].max() ** 0.5)
+        n_speakers = valid_nodes_df['speaker'].nunique()
+        chart_height = n_speakers * (node_height_px + 30)
 
         return alt.layer(*layers).properties(
-            width=700, height=300
+            width=700, height=chart_height
         ).interactive()

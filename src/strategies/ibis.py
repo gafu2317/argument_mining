@@ -16,6 +16,8 @@ class IBISStrategy(MiningStrategy):
 - **argument**: 提案に対する根拠・支持・懸念
 - **decision**: 最終的な決定事項
 
+各ノードの `node_type` フィールドには上記4種類のいずれか (`issue` / `position` / `argument` / `decision`) を必ず設定すること。
+
 # Rules (抽出ルール)
 1. 会話から主要なIssue(論点)を特定する。
 2. それに対するPosition(提案)を特定する。
@@ -41,6 +43,7 @@ Strictly output in JSON format matching this schema:
   "nodes": [
     {
       "id": "n1",
+      "node_type": "issue",
       "content": "APIの仕様が不明",
       "original_text": "Aさん: それが少し問題で...。APIの仕様について、ドキュメントに記載がない部分があって困っています。",
       "speaker": "Aさん",
@@ -48,6 +51,7 @@ Strictly output in JSON format matching this schema:
     },
     {
       "id": "n2",
+      "node_type": "position",
       "content": "新作ゲームで遊ぶ",
       "original_text": "Cさん: ドキュメントといえば、昨日公開された新しいMMORPGの「クリスタル・ファンタジア」の公式サイト、すごい作り込みだったよね。",
       "speaker": "Cさん",

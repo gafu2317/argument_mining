@@ -2,6 +2,7 @@
   "nodes": [
     {
       "id": "n1",
+      "node_type": "issue",
       "content": "新規サービスのバックエンド構成の選択",
       "original_text": "田中(PM): 今回の新規サービスのバックエンド構成について決めたい。選択肢はマイクロサービスか、モノリスかだ。",
       "speaker": "田中(PM)",
@@ -9,6 +10,7 @@
     },
     {
       "id": "n2",
+      "node_type": "position",
       "content": "マイクロサービスを推奨",
       "original_text": "佐藤(TechLead): 私はマイクロサービスを推します。将来的に機能ごとにチームを分割しやすくなるし、デプロイの独立性が保てます。",
       "speaker": "佐藤(TechLead)",
@@ -16,49 +18,64 @@
     },
     {
       "id": "n3",
-      "content": "マイクロサービスはオーバーエンジニアリングの懸念",
+      "node_type": "argument",
+      "content": "マイクロサービスは将来的なチーム分割とデプロイ独立性を提供",
+      "original_text": "佐藤(TechLead): 私はマイクロサービスを推します。将来的に機能ごとにチームを分割しやすくなるし、デプロイの独立性が保てます。",
+      "speaker": "佐藤(TechLead)",
+      "sequence": 2
+    },
+    {
+      "id": "n4",
+      "node_type": "argument",
+      "content": "チーム規模でのマイクロサービスはオーバーエンジニアリング",
       "original_text": "鈴木(Infra): しかし、今のチーム規模（5名）でマイクロサービスはオーバーエンジニアリングではないですか？ サービス間通信のレイテンシや、分散トランザクションの管理コストが跳ね上がります。",
       "speaker": "鈴木(Infra)",
       "sequence": 3
     },
     {
-      "id": "n4",
-      "content": "将来的なユーザー数を考慮したマイクロサービスの支持",
+      "id": "n5",
+      "node_type": "argument",
+      "content": "初期コストは高いが将来のスケールを考慮",
       "original_text": "佐藤(TechLead): 確かに初期コストは高いですが、このサービスは3年後にユーザー数100万人を目指しています。あとからモノリスを分割するのは地獄ですよ。",
       "speaker": "佐藤(TechLead)",
       "sequence": 4
     },
     {
-      "id": "n5",
-      "content": "運用コストの懸念",
+      "id": "n6",
+      "node_type": "argument",
+      "content": "運用コストも考慮する必要がある",
       "original_text": "田中(PM): ふむ。スケールへの備えは必要だが、鈴木さんの言う「運用コスト」も無視できない。",
       "speaker": "田中(PM)",
       "sequence": 5
     },
     {
-      "id": "n6",
-      "content": "モジュラーモノリスの提案",
+      "id": "n7",
+      "node_type": "position",
+      "content": "モジュラーモノリスを提案",
       "original_text": "高橋(Member): 間をとって「モジュラーモノリス」はどうでしょう？ デプロイ単位は一つですが、内部のコードは明確に境界を分けておくんです。これなら後で分割もしやすいし、インフラ構成は単純で済みます。",
       "speaker": "高橋(Member)",
       "sequence": 6
     },
     {
-      "id": "n7",
-      "content": "モジュラーモノリスに賛成",
+      "id": "n8",
+      "node_type": "argument",
+      "content": "モジュラーモノリスはインフラ管理が楽で開発スピードも維持",
       "original_text": "鈴木(Infra): それなら賛成です。インフラ管理も楽だし、開発スピードも落ちない。",
       "speaker": "鈴木(Infra)",
       "sequence": 7
     },
     {
-      "id": "n8",
+      "id": "n9",
+      "node_type": "argument",
       "content": "モジュラーモノリスが現実的な解決策",
       "original_text": "佐藤(TechLead): なるほど、規律を守って実装できるなら、それが一番現実的な解かもしれませんね。",
       "speaker": "佐藤(TechLead)",
       "sequence": 8
     },
     {
-      "id": "n9",
-      "content": "モジュラーモノリスでスタートする決定",
+      "id": "n10",
+      "node_type": "decision",
+      "content": "モジュラーモノリスでスタートする",
       "original_text": "田中(PM): よし、ではまずは「モジュラーモノリス」でスタートしよう。ディレクトリ構成の設計を頼む。",
       "speaker": "田中(PM)",
       "sequence": 9
@@ -66,12 +83,13 @@
   ],
   "edges": [
     {"source": "n2", "target": "n1", "label": "提案"},
-    {"source": "n3", "target": "n2", "label": "懸念"},
-    {"source": "n4", "target": "n2", "label": "支持"},
-    {"source": "n5", "target": "n3", "label": "懸念"},
-    {"source": "n6", "target": "n1", "label": "提案"},
-    {"source": "n7", "target": "n6", "label": "支持"},
-    {"source": "n8", "target": "n6", "label": "支持"},
-    {"source": "n9", "target": "n6", "label": "決定"}
+    {"source": "n3", "target": "n2", "label": "支持"},
+    {"source": "n4", "target": "n2", "label": "懸念"},
+    {"source": "n5", "target": "n1", "label": "支持"},
+    {"source": "n6", "target": "n1", "label": "懸念"},
+    {"source": "n7", "target": "n1", "label": "提案"},
+    {"source": "n8", "target": "n7", "label": "支持"},
+    {"source": "n9", "target": "n7", "label": "支持"},
+    {"source": "n10", "target": "n7", "label": "決定"}
   ]
 }

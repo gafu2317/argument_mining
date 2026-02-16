@@ -4,38 +4,6 @@ HSVも使ってみる
 仮説として色の変化が話題の脱線とリンクしている
     話題がずれていないのに、色が変わりすぎていることは避けたい
 
-
-
-```Python
-                    # --- 色分け分析処理 ---
-                    if use_color_analysis and graph and graph.nodes:
-                        with st.spinner('ベクトル化と距離計算を実行中...'):
-                            llm = LLMClient()
-                            node_contents = [node.content for node in graph.nodes]
-                            vectors = llm.fetch_embeddings(node_contents)
-                            
-                            for i, node in enumerate(graph.nodes):
-                                node.embedding = vectors[i]
-
-                            if graph.nodes and len(graph.nodes) > 1:
-                                first_node_embedding = np.array(graph.nodes[0].embedding)
-                                for node in graph.nodes:
-                                    if node.embedding is not None:
-                                        node_embedding = np.array(node.embedding)
-                                        # コサイン類似度
-                                        if np.linalg.norm(first_node_embedding) > 0 and np.linalg.norm(node_embedding) > 0:
-                                            sim = np.dot(node_embedding, first_node_embedding) / (np.linalg.norm(node_embedding) * np.linalg.norm(first_node_embedding))
-                                            node.cosine_sim_to_first = sim
-                                        else:
-                                            node.cosine_sim_to_first = 0.0
-                                        
-                                        # ユークリッド距離
-                                        dist = np.linalg.norm(node_embedding - first_node_embedding)
-                                        node.euclidean_distance_to_first = dist
-                            
-                            st.session_state["graph_data"] = graph
-
-```
 極端な逸脱をログをつける
 逸脱をした後に元の話題に戻す
 ユークリッドでもやってみる

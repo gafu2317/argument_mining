@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class Node(BaseModel):
     id: str
+    node_type: str | None = None  # issue / position / argument / decision
     content: str # UI表示用の要約
     original_text: str | None = None # ベクトル化に使用する、会話ログからの生の抜粋
     speaker: str | None = None
