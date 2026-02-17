@@ -22,3 +22,17 @@ HSVも使ってみる
 これから
 Louvain法でコミュニティ検出による「グループ分け」
 K-meansクラスタリングによる「トピック分類」
+
+
+A_Euclid_Start
+A_Euclid_Before
+A_Cosine_Start
+A_Cosine_Before
+B_Euclid_Start
+B_Euclid_Before
+B_Cosine_Start
+B_Cosine_Before
+C_Euclid_Start
+C_Euclid_Before
+C_Cosine_Start
+C_Cosine_Before

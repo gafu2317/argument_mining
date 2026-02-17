@@ -3,93 +3,110 @@
     {
       "id": "n1",
       "node_type": "issue",
-      "content": "新規サービスのバックエンド構成の選択",
-      "original_text": "田中(PM): 今回の新規サービスのバックエンド構成について決めたい。選択肢はマイクロサービスか、モノリスかだ。",
-      "speaker": "田中(PM)",
+      "content": "卒論の提出スケジュールの確認",
+      "original_text": "指導教員: 今日は卒論の提出スケジュールを確認したいと思います。現状を教えてください。",
+      "speaker": "指導教員",
       "sequence": 1
     },
     {
       "id": "n2",
       "node_type": "position",
-      "content": "マイクロサービスを推奨",
-      "original_text": "佐藤(TechLead): 私はマイクロサービスを推します。将来的に機能ごとにチームを分割しやすくなるし、デプロイの独立性が保てます。",
-      "speaker": "佐藤(TechLead)",
+      "content": "第3章まで書き終わった",
+      "original_text": "学生A: 第3章まで書き終わりました。今は第4章の実験結果の考察を執筆中です。",
+      "speaker": "学生A",
       "sequence": 2
     },
     {
       "id": "n3",
-      "node_type": "argument",
-      "content": "マイクロサービスは将来的なチーム分割とデプロイ独立性を提供",
-      "original_text": "佐藤(TechLead): 私はマイクロサービスを推します。将来的に機能ごとにチームを分割しやすくなるし、デプロイの独立性が保てます。",
-      "speaker": "佐藤(TechLead)",
-      "sequence": 2
+      "node_type": "position",
+      "content": "第2章が途中",
+      "original_text": "学生B: 私はまだ第2章が途中です。参考文献の整理に手間取っています。",
+      "speaker": "学生B",
+      "sequence": 3
     },
     {
       "id": "n4",
       "node_type": "argument",
-      "content": "チーム規模でのマイクロサービスはオーバーエンジニアリング",
-      "original_text": "鈴木(Infra): しかし、今のチーム規模（5名）でマイクロサービスはオーバーエンジニアリングではないですか？ サービス間通信のレイテンシや、分散トランザクションの管理コストが跳ね上がります。",
-      "speaker": "鈴木(Infra)",
-      "sequence": 3
-    },
-    {
-      "id": "n5",
-      "node_type": "argument",
-      "content": "初期コストは高いが将来のスケールを考慮",
-      "original_text": "佐藤(TechLead): 確かに初期コストは高いですが、このサービスは3年後にユーザー数100万人を目指しています。あとからモノリスを分割するのは地獄ですよ。",
-      "speaker": "佐藤(TechLead)",
+      "content": "締め切りまでの時間を意識する",
+      "original_text": "指導教員: 締め切りまであと3週間です。優先順位をつけて進めましょう。",
+      "speaker": "指導教員",
       "sequence": 4
     },
     {
-      "id": "n6",
-      "node_type": "argument",
-      "content": "運用コストも考慮する必要がある",
-      "original_text": "田中(PM): ふむ。スケールへの備えは必要だが、鈴木さんの言う「運用コスト」も無視できない。",
-      "speaker": "田中(PM)",
+      "id": "n5",
+      "node_type": "position",
+      "content": "参考文献を今週末に終わらせる",
+      "original_text": "学生B: 参考文献は今週末に終わらせます。第3章の初稿は来週中に提出できます。",
+      "speaker": "学生B",
       "sequence": 5
     },
     {
-      "id": "n7",
+      "id": "n6",
       "node_type": "position",
-      "content": "モジュラーモノリスを提案",
-      "original_text": "高橋(Member): 間をとって「モジュラーモノリス」はどうでしょう？ デプロイ単位は一つですが、内部のコードは明確に境界を分けておくんです。これなら後で分割もしやすいし、インフラ構成は単純で済みます。",
-      "speaker": "高橋(Member)",
+      "content": "第4章草稿を今週末に送る",
+      "original_text": "学生A: 私の第4章草稿は今週末にお送りします。",
+      "speaker": "学生A",
       "sequence": 6
     },
     {
-      "id": "n8",
+      "id": "n7",
       "node_type": "argument",
-      "content": "モジュラーモノリスはインフラ管理が楽で開発スピードも維持",
-      "original_text": "鈴木(Infra): それなら賛成です。インフラ管理も楽だし、開発スピードも落ちない。",
-      "speaker": "鈴木(Infra)",
+      "content": "考察は仮説とのズレを丁寧に書く",
+      "original_text": "指導教員: 第4章の考察は、仮説とのズレも丁寧に書いてください。想定外の結果こそ論文の核になります。",
+      "speaker": "指導教員",
       "sequence": 7
     },
     {
-      "id": "n9",
-      "node_type": "argument",
-      "content": "モジュラーモノリスが現実的な解決策",
-      "original_text": "佐藤(TechLead): なるほど、規律を守って実装できるなら、それが一番現実的な解かもしれませんね。",
-      "speaker": "佐藤(TechLead)",
+      "id": "n8",
+      "node_type": "position",
+      "content": "原因分析を中心に書く",
+      "original_text": "学生A: わかりました。「なぜ仮説と違ったのか」の原因分析を中心に書きます。",
+      "speaker": "学生A",
       "sequence": 8
     },
     {
-      "id": "n10",
-      "node_type": "decision",
-      "content": "モジュラーモノリスでスタートする",
-      "original_text": "田中(PM): よし、ではまずは「モジュラーモノリス」でスタートしよう。ディレクトリ構成の設計を頼む。",
-      "speaker": "田中(PM)",
+      "id": "n9",
+      "node_type": "position",
+      "content": "参考文献の件数の目安を確認",
+      "original_text": "学生B: 参考文献、何件くらいが目安ですか？",
+      "speaker": "学生B",
       "sequence": 9
+    },
+    {
+      "id": "n10",
+      "node_type": "argument",
+      "content": "20件以上の質の高い国際論文が必要",
+      "original_text": "指導教員: 20件以上は欲しいですね。質の高い国際論文を中心にしてください。",
+      "speaker": "指導教員",
+      "sequence": 10
+    },
+    {
+      "id": "n11",
+      "node_type": "position",
+      "content": "日本語論文だけにならないよう意識する",
+      "original_text": "学生B: 了解しました。日本語論文だけにならないよう意識します。",
+      "speaker": "学生B",
+      "sequence": 11
+    },
+    {
+      "id": "n12",
+      "node_type": "decision",
+      "content": "来週月曜日に草稿を確認しフィードバックする",
+      "original_text": "指導教員: では、来週月曜日に二人の草稿を確認してフィードバックします。",
+      "speaker": "指導教員",
+      "sequence": 12
     }
   ],
   "edges": [
-    {"source": "n2", "target": "n1", "label": "提案"},
-    {"source": "n3", "target": "n2", "label": "支持"},
-    {"source": "n4", "target": "n2", "label": "懸念"},
-    {"source": "n5", "target": "n1", "label": "支持"},
-    {"source": "n6", "target": "n1", "label": "懸念"},
-    {"source": "n7", "target": "n1", "label": "提案"},
-    {"source": "n8", "target": "n7", "label": "支持"},
-    {"source": "n9", "target": "n7", "label": "支持"},
-    {"source": "n10", "target": "n7", "label": "決定"}
+    {"source": "n1", "target": "n2", "label": "提案"},
+    {"source": "n1", "target": "n3", "label": "提案"},
+    {"source": "n1", "target": "n4", "label": "提案"},
+    {"source": "n4", "target": "n5", "label": "支持"},
+    {"source": "n4", "target": "n6", "label": "支持"},
+    {"source": "n1", "target": "n7", "label": "提案"},
+    {"source": "n7", "target": "n8", "label": "支持"},
+    {"source": "n1", "target": "n9", "label": "提案"},
+    {"source": "n10", "target": "n11", "label": "支持"},
+    {"source": "n1", "target": "n12", "label": "決定"}
   ]
 }

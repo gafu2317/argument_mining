@@ -45,7 +45,8 @@ class TopicMapPlotter:
             wrapped_content = '\n'.join(textwrap.wrap(content_summary, width=_NODE_CHARS_PER_LINE))
             type_label = _NODE_TYPE_LABELS.get((node.node_type or "").lower(), "?")
             label_text = f"{speaker_prefix}\n{wrapped_content}"
-            outer_size, inner_size = TopicMapPlotter._compute_node_sizes(label_text)
+            # サイズ計算にはtype_labelも含め、ノードが上部ラベルより小さくならないようにする
+            outer_size, inner_size = TopicMapPlotter._compute_node_sizes(f"{type_label}\n{label_text}")
             node_data.append({
                 "id": node.id, "sequence": node.sequence, "speaker": node.speaker or "不明",
                 "node_type": node.node_type or "", "type_label": type_label,
@@ -106,26 +107,28 @@ class TopicMapPlotter:
         if valid_nodes_df is None or valid_nodes_df.empty:
             return None
         
-        # sequenceがNaNの行を除外
+        # sequenceがNaNの行を除外し、sequence順に並べたうえで表示用インデックスを付与する
+        # plot_x を X 軸に使うことで、同一utteranceの複数ノードも等間隔に並ぶ
         valid_nodes_df = valid_nodes_df[valid_nodes_df['sequence'].notna()].sort_values(by='sequence').reset_index(drop=True)
         if valid_nodes_df.empty:
             return None
+        valid_nodes_df['plot_x'] = range(len(valid_nodes_df))
 
         # エッジデータ準備
         edge_data = []
-        node_pos_map = {node["id"]: {"sequence": node["sequence"], "speaker": node["speaker"]} for _, node in valid_nodes_df.iterrows()}
+        node_pos_map = {node["id"]: {"plot_x": node["plot_x"], "speaker": node["speaker"]} for _, node in valid_nodes_df.iterrows()}
         for edge in graph.edges:
             source_node_info, target_node_info = node_pos_map.get(edge.source), node_pos_map.get(edge.target)
             if source_node_info and target_node_info:
                 edge_data.append({
-                    "x1": source_node_info["sequence"], "y1": source_node_info["speaker"],
-                    "x2": target_node_info["sequence"], "y2": target_node_info["speaker"],
+                    "x1": source_node_info["plot_x"], "y1": source_node_info["speaker"],
+                    "x2": target_node_info["plot_x"], "y2": target_node_info["speaker"],
                 })
         edges_df = pd.DataFrame(edge_data)
 
         # グラフ構築
         base = alt.Chart(valid_nodes_df).encode(
-            x=alt.X('sequence:Q', axis=alt.Axis(title='時系列順', grid=True)),
+            x=alt.X('plot_x:Q', axis=alt.Axis(title='時系列順', grid=True)),
             y=alt.Y('speaker:N', axis=alt.Axis(title='発言者'))
         )
         
@@ -165,11 +168,15 @@ class TopicMapPlotter:
         layers.extend([border_layer, white_bg_layer, foreground_text_layer, type_label_layer])
 
         # ノードの最大サイズ（mark_point size は面積なので sqrt で辺長に変換）から
-        # バンドの高さを計算し、ノードが上下に見切れないようにする
+        # バンドの高さを計算する。type_label はノード上端より abs(type_label_dy) 上に描画されるため、
+        # バンド高さにその分を加算してクリップされないようにする。
         node_height_px = int(valid_nodes_df['outer_size'].max() ** 0.5)
+        label_overhead = abs(type_label_dy) + _NODE_FONT_SIZE * 2
         n_speakers = valid_nodes_df['speaker'].nunique()
-        chart_height = n_speakers * (node_height_px + 30)
+        chart_height = n_speakers * (node_height_px + label_overhead + 20)
+
+        chart_width = max(len(valid_nodes_df) * 60 + 80, 350)
 
         return alt.layer(*layers).properties(
-            width=700, height=chart_height
+            width=chart_width, height=chart_height
         ).interactive()
